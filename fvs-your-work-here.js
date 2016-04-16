@@ -25,9 +25,6 @@
 *   fs.mkdirSync
 *
 * https://nodejs.org/api/fs.html
-*
-* I've also written you a getSha1 function (since you've already written one yourselves)!
-*
 **/
 const fs = require('fs');
 const getSha1 = require('./util').getSha1;
@@ -35,53 +32,77 @@ const getSha1 = require('./util').getSha1;
 /**
   let's write some helper functions!
 **/
+var objdir = "./.fvs/objects/";
 function createFVSObject (fileContents) {
-  // a. Hash the contents of the file
-  // b. Use the first two characters of the hash as the directory in .fvs/objects
-  // c. Check if the directory already exists! Do you know how to check if a directory exists in node?
-  //      Hint: you'll need to use a try/catch block
-  //      Another hint: look up fs.statSync
-  // d. Write a file whose name is the rest of the hash, and whose contents is the contents of the file
-  // e. Return the hash!
+  var hash = getSha1(fileContents);
+  var dir = objdir + hash.slice(0, 2);
+  var fname = hash.slice(2);
+  try {
+    fs.readdirSync(dir);
+  } catch (e) {
+    fs.mkdirSync(dir);
+  }
+  dir += "/" + fname;
+  try {
+    fs.readFileSync(dir);
+  } catch (e) {
+    fs.writeFileSync(dir, fileContents);
+  }
+  return hash;
 }
 
 function createBlobObject (fileName) {
-  // this will use our createFVSObject function above!
+  return createFVSObject(fs.readFileSync(fileName));
 }
 
 // NOTE: the index passed in here is an array representing the existing index
 // Each entry in the array is a string representing a line in the index.
 // This means that you'll actually read the index and turn it into an array before you get here
+var indexfile = "./.fvs/index";
 function updateIndex (index, fileName, blobRef) {
-  // a. create the index if none exists
-  // b. check if the file already has an index entry, and remove it if it does!
-  // c. add the new line to the index
-  // d. return the new index (in string form)!
+  var found = false;
+  var arr = index.map(idx => idx.split(" ")[0] === fileName ? (found = true && fileName + " " + blobRef): idx).join("\n");
+  !found && (arr += fileName + " " + blobRef);
+  fs.writeFileSync(indexfile, arr);
+  return arr;
 }
 
+var fvsdir = "./.fvs/";
 module.exports.init = function () {
-  // step 1. if a .fvs file already exists, we should short circuit
-
-  // step 2. do you remember the files/directories we need to make?
-  /*
-    .fvs/
-      objects/
-      refs/master
-      HEAD
-  */
+  try {
+    fs.readdirSync(fvsdir);
+    throw ".fvs already exists";
+  } catch (e) {
+    if(typeof e === "string") throw new Error(e);
+    fs.mkdirSync(fvsdir);
+    fs.mkdirSync(fvsdir + "objects/");
+    fs.mkdirSync(fvsdir + "refs/");
+    fs.writeFileSync(fvsdir + "refs/master");
+    fs.writeFileSync(fvsdir + "HEAD", "ref: refs/master");
+  }
 };
 
 module.exports.add = function () {
-
+  
+  var files = process.argv.slice(3);
+  if(!files.length) throw "No filename specified";
+  //var arr = files.map(f => createBlobObject(f));
+  try {
+    fs.readFileSync(indexfile).split("\n");
+  } catch (e) {
+    fs.writeFileSync(fvsdir + "index", "");
+  }
+ // var idxNames = arr.map((hash, i) => files[i] + " " + hash).join("\n");
+ // fs.writeFileSync(fvsdir + "index", idxNames);
+  var blob;
+  files.forEach(name => updateIndex(fs.readFileSync(indexfile, "utf8").split("\n"), name, blob = createBlobObject(name)));
+   return blob;
   // step 0a. make sure a filename is passed in as an argument
-
   // step 0b. create the index if none exists
-
   // step 1: create a 'blob' object in .fvs/objects
   /*
     Hey, remember those functions we wrote earlier...?
   */
-
   // step 2: add the file to the index
   /*
     You should make sure that the filename includes the path relative to the root directory.
@@ -93,6 +114,8 @@ module.exports.add = function () {
 };
 
 module.exports.commit = function () {
+  var message = process.argv[3];
+  if(!message) throw "No commit message";
 
   // step 0a. make sure we have a lovely commit message!
 
@@ -103,7 +126,7 @@ module.exports.commit = function () {
   */
   let index = fs.readFileSync('./.fvs/index', 'utf8');
   let treeRoot = require('./helpers')(index);
-
+  
   // step 2. create a commit object
   // if it's not the first commit, remember to
   // get current branch from HEAD, and get the parent tree from refs
