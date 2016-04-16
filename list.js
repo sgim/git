@@ -67,7 +67,14 @@ ListNode.prototype.insertAt = function (id, list) {
 };
 
 ListNode.prototype.commonAncestor = function (list) {
-  
+  var cur = this;
+  var anc;
+  while(cur) {
+    if(anc = list.find(cur.id)) {
+      return anc;
+    }
+    cur = cur.next;
+  }
 };
 
 module.exports = { util: util, ListNode: ListNode };
