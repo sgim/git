@@ -63,7 +63,7 @@ ListNode.prototype.find = function (id) {
 };
 
 ListNode.prototype.insertAt = function (id, list) {
-  return this.splitAt(id).append(list).append(this.find(id));
+  return id !== this.id ? this.splitAt(id).append(list).append(this.find(id)) : list.append(this);
 };
 
 ListNode.prototype.commonAncestor = function (list) {

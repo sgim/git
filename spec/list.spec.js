@@ -139,6 +139,11 @@ describe('Functional Lists', function () {
     // make sure we didn't use the original ln3
     expect(ln4_with_ln3_at_ln2.next.next).to.not.equal(ln3);
     expect(ln3.length()).to.equal(3);
+
+    let ln3_with_ln4_at_ln3 = ln3.insertAt(ln3.id, ln4);
+    expect(ln3_with_ln4_at_ln3).to.not.equal(ln3);
+    expect(ln3_with_ln4_at_ln3.next.next.next.next).to.equal(ln3);
+    expect(ln3_with_ln4_at_ln3.length()).to.equal(7);
   });
 
   it('have a commonAncestor(list) function that finds the same node (by reference) in the two lists', function () {
