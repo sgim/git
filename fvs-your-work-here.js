@@ -38,15 +38,10 @@ function createFVSObject (fileContents) {
   var dir = objdir + hash.slice(0, 2);
   var fname = hash.slice(2);
   try {
-    fs.readdirSync(dir);
+    fs.statSync(dir);
   } catch (e) {
     fs.mkdirSync(dir);
-  }
-  dir += "/" + fname;
-  try {
-    fs.readFileSync(dir);
-  } catch (e) {
-    fs.writeFileSync(dir, fileContents);
+    fs.writeFileSync(dir + "/" + fname, fileContents);
   }
   return hash;
 }
@@ -60,6 +55,10 @@ function createBlobObject (fileName) {
 // This means that you'll actually read the index and turn it into an array before you get here
 var indexfile = "./.fvs/index";
 function updateIndex (index, fileName, blobRef) {
+ // index = (index || []).filter(i => i.split(" ")[0] !== fileName);
+ // index.push(fileName + " " + blobRef);
+ // return index.join("\n");
+
   var found = false;
   var arr = index.map(idx => idx.split(" ")[0] === fileName ? (found = true && fileName + " " + blobRef): idx).join("\n");
   !found && (arr += fileName + " " + blobRef);
@@ -83,20 +82,14 @@ module.exports.init = function () {
 };
 
 module.exports.add = function () {
-  
-  var files = process.argv.slice(3);
-  if(!files.length) throw "No filename specified";
-  //var arr = files.map(f => createBlobObject(f));
-  try {
-    fs.readFileSync(indexfile).split("\n");
-  } catch (e) {
-    fs.writeFileSync(fvsdir + "index", "");
-  }
- // var idxNames = arr.map((hash, i) => files[i] + " " + hash).join("\n");
- // fs.writeFileSync(fvsdir + "index", idxNames);
-  var blob;
-  files.forEach(name => updateIndex(fs.readFileSync(indexfile, "utf8").split("\n"), name, blob = createBlobObject(name)));
-   return blob;
+  var root = fs.readdirSync(".fvs");
+  var name = process.argv[3];
+  if(!name) throw "No filename specified";
+  if(root.indexOf("index") === -1) fs.writeFileSync(".fvs/index", "", "utf8");
+  var blob = createBlobObject(name);
+  var index = fs.readFileSync(".fvs/index", "utf8");
+  updateIndex(typeof index === "string" ? index.split("\n"): [], name, blob);
+  return blob;
   // step 0a. make sure a filename is passed in as an argument
   // step 0b. create the index if none exists
   // step 1: create a 'blob' object in .fvs/objects
@@ -124,9 +117,20 @@ module.exports.commit = function () {
     For now, I've done this for you! It's not easy!
     If you get done early, check out the specs to implement this on your own!
   */
-  let index = fs.readFileSync('./.fvs/index', 'utf8');
+  let index = fs.readFileSync('.fvs/index', 'utf8');
   let treeRoot = require('./helpers')(index);
-  
+  var currentBranch = fs.readFileSync(".fvs/HEAD", "utf8");
+  var path = currentBranch.split(": ")[1];
+  var parent = fs.readFileSync(".fvs/" + path, "utf8");
+  var fileContents;
+
+  if(parent !== "undefined") fileContents = [["tree", treeRoot], ["author", "JARI LUNGER"], [message], ["parent", parent]];
+  else fileContents = [["tree", treeRoot], ["author", "JARI LUNGER"], [message]];
+  fileContents = fileContents.map(line => line.join(" ")).join("\n");
+  var commitHash = createFVSObject(fileContents);
+  fs.writeFileSync(".fvs/" + path, commitHash, "utf8");
+  return commitHash;
+
   // step 2. create a commit object
   // if it's not the first commit, remember to
   // get current branch from HEAD, and get the parent tree from refs
