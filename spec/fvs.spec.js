@@ -12,7 +12,7 @@ const rmdir = require('rimraf').sync;
 const fvs = require('../fvs-your-work-here');
 const getSha1 = require('../util').getSha1;
 
-describe('FVS', function () {
+xdescribe('FVS', function () {
 
   beforeEach(function () { rmdir('./.fvs') });
   afterEach(function () { rmdir('./.fvs') });

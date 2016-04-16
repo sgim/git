@@ -4,7 +4,7 @@
   "description": "Fullstack Version System",
   "main": "index.js",
   "scripts": {
-    "test": "mocha spec",
+    "test": "mocha spec -w",
     "flow": "flow; test $? -eq 0 -o $? -eq 2"
   },
   "author": "",
