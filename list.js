@@ -55,7 +55,7 @@ ListNode.prototype.remove = function (id) {
 };
 
 ListNode.prototype.splitAt = function (id) {
-  return this.id === id ? null : new ListNode(this.value, this.next && this.next.splitAt(id));
+  return this.id !== id && new ListNode(this.value, this.next && this.next.splitAt(id));
 };
 
 ListNode.prototype.find = function (id) {
@@ -67,14 +67,7 @@ ListNode.prototype.insertAt = function (id, list) {
 };
 
 ListNode.prototype.commonAncestor = function (list) {
-  var cur = this;
-  var anc;
-  while(cur) {
-    if(anc = list.find(cur.id)) {
-      return anc;
-    }
-    cur = cur.next;
-  }
+  return list.find(this.id) || (this.next && this.next.commonAncestor(list));
 };
 
 module.exports = { util: util, ListNode: ListNode };
