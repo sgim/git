@@ -51,11 +51,23 @@ ListNode.prototype.append = function (list) {
 };
 
 ListNode.prototype.remove = function (id) {
-  if(this.id === id) {
+  return this.id === id ? this.next : new ListNode(this.value, this.next && this.next.remove(id));
+};
 
-  } else {
-    return this.append(null);
-  }
+ListNode.prototype.splitAt = function (id) {
+  return this.id === id ? null : new ListNode(this.value, this.next && this.next.splitAt(id));
+};
+
+ListNode.prototype.find = function (id) {
+  return this.id === id ? this : (this.next && this.next.find(id));
+};
+
+ListNode.prototype.insertAt = function (id, list) {
+  return this.splitAt(id).append(list).append(this.find(id));
+};
+
+ListNode.prototype.commonAncestor = function (list) {
+  
 };
 
 module.exports = { util: util, ListNode: ListNode };
